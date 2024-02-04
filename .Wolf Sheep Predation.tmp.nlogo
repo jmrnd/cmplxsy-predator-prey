@@ -67,6 +67,7 @@ to go
   if not any? turtles [ stop ]
   ; stop the model if there are no wolves and the number of sheep gets very large
   if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited the earth" stop ]
+
   ask sheep [
     sheep-move
 
@@ -79,6 +80,7 @@ to go
 
     reproduce-sheep  ; sheep reproduce at a random rate governed by a slider
   ]
+
   ask wolves [
     wolf-move
     set energy energy - 1  ; wolves lose energy as they move
@@ -93,32 +95,18 @@ to go
   display-labels
 end
 
-to sheep-move  ; turtle procedure
+to sheep-move  ; sheep procedure
   rt random 50
   lt random 50
   if not can-move? 1 [ rt 180 ]
   fd 1
 end
 
-to wolf-move
+to wolf-move ; wolf procedure
   rt random 45
   lt random 45
   if not can-move? 1 [ rt 180 ]
   fd wolf-speed
-end
-
-to slow-down
-  set wolf-speed 0.5
-end
-
-to pounce
-  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
-  if target-sheep != nobody [
-    face target-sheep
-    fd detection-inner-radius
-    ask target-sheep [ die ]
-    set energy energy + wolf-gain-from-food
-  ]
 end
 
 to eat-grass  ; sheep procedure
@@ -143,26 +131,21 @@ to reproduce-wolves  ; wolf procedure
   ]
 end
 
-to hunt-sheep
-  if not stalking-mode? [
-    set color black
-    let nearby-sheep turtles in-radius detection-outer-radius with [ breed = sheep ]
-    if any? nearby-sheep [
-      set stalking-mode? true
-      slow-down ; ENTER STALKING MODE
-    ]
-  ]
+to slow-down ; wolf procedure
+  set wolf-speed 0.5
+end
 
-  if stalking-mode? [
-    set color red
-    let close-sheep turtles in-radius detection-inner-radius with [ breed = sheep ]
-    if any? close-sheep [
-      pounce ; INITIATE POUNCE
-      set stalking-mode? false ; RESET STALKING MODE
-      set wolf-speed 1 ; RESET SPEED
-    ]
+to pounce ; wolf procedure
+  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
+  if target-sheep != nobody [
+    face target-sheep
+    fd detection-inner-radius
+    ask target-sheep [ die ]
+    set energy energy + wolf-gain-from-food
   ]
 end
+
+
 
 to death  ; turtle procedure (i.e. both wolf and sheep procedure)
   ; when energy dips below zero, die
@@ -447,7 +430,7 @@ SWITCH
 303
 show-energy?
 show-energy?
-0
+1
 1
 -1000
 

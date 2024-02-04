@@ -109,20 +109,6 @@ to wolf-move ; wolf procedure
   fd wolf-speed
 end
 
-to slow-down ; wolf procedure
-  set wolf-speed 0.5
-end
-
-to pounce ; wolf procedure
-  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
-  if target-sheep != nobody [
-    face target-sheep
-    fd detection-inner-radius
-    ask target-sheep [ die ]
-    set energy energy + wolf-gain-from-food
-  ]
-end
-
 to eat-grass  ; sheep procedure
   ; sheep eat grass and turn the patch brown
   if pcolor = green [
@@ -145,7 +131,7 @@ to reproduce-wolves  ; wolf procedure
   ]
 end
 
-to hunt-sheep
+to hunt-sheep ; wolf procedure
   if not stalking-mode? [
     set color black
     let nearby-sheep turtles in-radius detection-outer-radius with [ breed = sheep ]
@@ -163,6 +149,20 @@ to hunt-sheep
       set stalking-mode? false ; RESET STALKING MODE
       set wolf-speed 1 ; RESET SPEED
     ]
+  ]
+end
+
+to slow-down ; wolf procedure
+  set wolf-speed 0.5
+end
+
+to pounce ; wolf procedure
+  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
+  if target-sheep != nobody [
+    face target-sheep
+    fd detection-inner-radius
+    ask target-sheep [ die ]
+    set energy energy + wolf-gain-from-food
   ]
 end
 
