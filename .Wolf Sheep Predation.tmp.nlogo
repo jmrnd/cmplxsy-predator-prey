@@ -1,4 +1,6 @@
-globals [ max-sheep ]  ; don't let the sheep population grow too large
+globals [
+  max-sheep ; don't let the sheep population grow too large
+]
 
 ; Sheep and wolves are both breeds of turtles
 breed [ sheep a-sheep ]  ; sheep is its own plural, so we use "a-sheep" as the singular
@@ -7,6 +9,13 @@ breed [ wolves wolf ]
 turtles-own [ energy ]       ; both wolves and sheep have energy
 
 patches-own [ countdown ]    ; this is for the sheep-wolves-grass model version
+
+wolves-own [
+  wolf-speed
+  detection-outer-radius
+  detection-inner-radius
+  stalking-mode?
+]
 
 to setup
   clear-all
@@ -44,6 +53,10 @@ to setup
     set size 2  ; easier to see
     set energy random (2 * wolf-gain-from-food)
     setxy random-xcor random-ycor
+    set wolf-speed 1
+    set detection-outer-radius 5 ; HARDCODED FOR NOW
+    set detection-inner-radius 3
+    set stalking-mode? false
   ]
   display-labels
   reset-ticks
@@ -55,7 +68,7 @@ to go
   ; stop the model if there are no wolves and the number of sheep gets very large
   if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited the earth" stop ]
   ask sheep [
-    move
+    sheep-move
 
     ; in this version, sheep eat grass, grass grows, and it costs sheep energy to move
     if model-version = "sheep-wolves-grass" [
@@ -67,9 +80,9 @@ to go
     reproduce-sheep  ; sheep reproduce at a random rate governed by a slider
   ]
   ask wolves [
-    move
+    wolf-move
     set energy energy - 1  ; wolves lose energy as they move
-    eat-sheep ; wolves eat a sheep on their patch
+    hunt-sheep ; LIONS CHECK FOR ZEBRAS WITHIN RANGE TO STALK
     death ; wolves die if they run out of energy
     reproduce-wolves ; wolves reproduce at a random rate governed by a slider
   ]
@@ -80,10 +93,32 @@ to go
   display-labels
 end
 
-to move  ; turtle procedure
+to sheep-move  ; turtle procedure
   rt random 50
   lt random 50
+  if not can-move? 1 [ rt 180 ]
   fd 1
+end
+
+to wolf-move
+  rt random 45
+  lt random 45
+  if not can-move? 1 [ rt 180 ]
+  fd wolf-speed
+end
+
+to slow-down
+  set wolf-speed 0.5
+end
+
+to pounce
+  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
+  if target-sheep != nobody [
+    face target-sheep
+    fd detection-inner-radius
+    ask target-sheep [ die ]
+    set energy energy + wolf-gain-from-food
+  ]
 end
 
 to eat-grass  ; sheep procedure
@@ -108,11 +143,24 @@ to reproduce-wolves  ; wolf procedure
   ]
 end
 
-to eat-sheep  ; wolf procedure
-  let prey one-of sheep-here                    ; grab a random sheep
-  if prey != nobody  [                          ; did we get one? if so,
-    ask prey [ die ]                            ; kill it, and...
-    set energy energy + wolf-gain-from-food     ; get energy from eating
+to hunt-sheep
+  if not stalking-mode? [
+    set color black
+    let nearby-sheep turtles in-radius detection-outer-radius with [ breed = sheep ]
+    if any? nearby-sheep [
+      set stalking-mode? true
+      slow-down ; ENTER STALKING MODE
+    ]
+  ]
+
+  if stalking-mode? [
+    set color red
+    let close-sheep turtles in-radius detection-inner-radius with [ breed = sheep ]
+    if any? close-sheep [
+      pounce ; INITIATE POUNCE
+      set stalking-mode? false ; RESET STALKING MODE
+      set wolf-speed 1 ; RESET SPEED
+    ]
   ]
 end
 
@@ -142,7 +190,9 @@ end
 to display-labels
   ask turtles [ set label "" ]
   if show-energy? [
-    ask wolves [ set label round energy ]
+    ask wolves [
+      set label round energy
+    ]
     if model-version = "sheep-wolves-grass" [ ask sheep [ set label round energy ] ]
   ]
 end
@@ -165,8 +215,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
-1
+0
+0
 1
 -25
 25
@@ -187,7 +237,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-1.0
+30.0
 1
 1
 NIL
@@ -217,7 +267,7 @@ sheep-reproduce
 sheep-reproduce
 1.0
 20.0
-3.0
+2.0
 1.0
 1
 %
@@ -232,7 +282,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-1.0
+2.0
 1
 1
 NIL
