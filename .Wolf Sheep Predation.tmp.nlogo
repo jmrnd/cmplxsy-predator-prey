@@ -38,7 +38,7 @@ to setup
 
   create-sheep initial-number-sheep  ; create the sheep, then initialize their variables
   [
-    set shape  "zebra_prey"
+    set shape  "sheep"
     set color white
     set size 1.5  ; easier to see
     set label-color blue - 2
@@ -48,7 +48,7 @@ to setup
 
   create-wolves initial-number-wolves  ; create the wolves, then initialize their variables
   [
-    set shape "lionpredator"
+    set shape "wolf"
     set color black
     set size 2  ; easier to see
     set energy random (2 * wolf-gain-from-food)
@@ -131,27 +131,6 @@ to reproduce-wolves  ; wolf procedure
   ]
 end
 
-to hunt-sheep ; wolf procedure
-  if not stalking-mode? [
-    set color black
-    let nearby-sheep turtles in-radius detection-outer-radius with [ breed = sheep ]
-    if any? nearby-sheep [
-      set stalking-mode? true
-      slow-down ; ENTER STALKING MODE
-    ]
-  ]
-
-  if stalking-mode? [
-    set color red
-    let close-sheep turtles in-radius detection-inner-radius with [ breed = sheep ]
-    if any? close-sheep [
-      pounce ; INITIATE POUNCE
-      set stalking-mode? false ; RESET STALKING MODE
-      set wolf-speed 1 ; RESET SPEED
-    ]
-  ]
-end
-
 to slow-down ; wolf procedure
   set wolf-speed 0.5
 end
@@ -165,6 +144,8 @@ to pounce ; wolf procedure
     set energy energy + wolf-gain-from-food
   ]
 end
+
+
 
 to death  ; turtle procedure (i.e. both wolf and sheep procedure)
   ; when energy dips below zero, die
@@ -449,7 +430,7 @@ SWITCH
 303
 show-energy?
 show-energy?
-0
+1
 1
 -1000
 
@@ -807,24 +788,6 @@ true
 0
 Line -7500403 true 150 0 150 150
 
-lionpredator
-false
-0
-Polygon -1184463 true false 45 90 30 105 15 120 15 135 30 150 45 165 60 150 75 135 90 105 90 90 90 75 60 75 45 90
-Polygon -1184463 true false 135 90 135 90 180 105 210 105 240 120 240 120 255 135 270 120 255 105 255 90 285 120 270 135 255 150 255 150 240 165 225 180 210 195 225 210 210 240 180 240 195 225 180 195 180 180 180 180 165 180 150 180 120 180 105 195 105 210 90 240 60 240 75 225 75 210 75 180 105 150 120 120 120 105 135 90
-Polygon -6459832 true false 255 90 255 105 225 90 240 90 255 90
-Polygon -1184463 true false 255 165 270 195 270 210 270 225 270 240 240 240 255 225 255 210 225 180 240 165 255 150 255 150
-Line -16777216 false 240 165 225 180
-Line -16777216 false 255 150 240 165
-Polygon -1184463 true false 105 210 120 225 135 225 150 210 135 210 120 195 120 180 105 195 105 210
-Line -16777216 false 120 180 105 195
-Line -16777216 false 105 195 105 210
-Polygon -16777216 true false 15 120 15 120 30 120 15 135 15 135 15 120 30 135
-Rectangle -1 true false 60 90 75 105
-Polygon -6459832 true false 45 60 30 75 30 90 45 90 75 75 90 75 90 90 90 105 75 135 60 150 45 165 45 180 60 195 75 210 75 195 90 180 105 165 120 135 135 120 135 105 135 75 105 45 90 45 75 45 60 45 45 60 45 60
-Polygon -16777216 true false 60 90 45 105 60 105 60 90
-Line -16777216 false 30 150 45 150
-
 pentagon
 false
 0
@@ -963,49 +926,6 @@ false
 0
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
-
-zebra_prey
-false
-0
-Polygon -1 true false 195 180 210 210 210 240 195 270 210 270 225 255 225 225 225 210 210 180 195 180
-Polygon -1 true false 60 75 75 75 120 105 180 105 240 105 255 120 255 120 285 210 270 210 255 150 240 195 255 210 255 255 240 270 225 270 240 240 240 225 210 195 210 180 195 180 165 180 135 195 120 240 120 270 90 270 105 255 105 210 105 195 105 195 90 180 75 165 60 150 45 150 30 165 15 165 0 150 15 120 30 105 60 75 60 75
-Polygon -16777216 true false 45 105 45 120 30 120 45 105
-Polygon -16777216 true false 0 150 45 150 30 165 15 165 0 150 0 135 30 150
-Polygon -16777216 true false 30 90 45 90 60 75 105 105 135 105 120 90 105 75 90 60 75 45 60 45 60 45 45 45 45 45 15 75 30 90 45 90 30 105
-Polygon -1 true false 60 60 75 75 60 75 60 75
-Polygon -1 true false 75 60 90 90 90 75 75 75 75 60
-Polygon -1 true false 90 75 90 90 90 90 90 90 90 75
-Polygon -1 true false 45 60 60 75 60 90 45 75
-Polygon -16777216 true false 60 120 45 150 45 150 60 120 45 135 45 150
-Polygon -16777216 true false 60 135 75 165 60 150 60 135 90 60 60 150
-Polygon -16777216 true false 75 135 75 150 90 180 75 135 90 90 75 150
-Polygon -16777216 true false 90 135 90 90 105 195 105 135 105 105 90 180
-Polygon -1 true false 90 75 105 105 120 105 90 90 90 75
-Polygon -16777216 true false 105 135 135 195 105 120 135 105 120 105 120 120
-Polygon -16777216 true false 135 135 150 105 135 165 135 105 150 105 135 120
-Polygon -16777216 true false 165 105 165 105 165 180 150 120 165 105 150 135
-Polygon -16777216 true false 105 195 135 210 150 210 120 210 105 195
-Polygon -16777216 true false 105 210 105 210 120 225 120 240 105 210
-Polygon -16777216 true false 105 165 120 195 135 210 120 180 105 165 105 150
-Polygon -16777216 true false 180 180 180 105 180 180 180 105 180 105 165 180
-Polygon -16777216 true false 120 120 150 195 120 150 120 165 135 165 120 165
-Polygon -16777216 true false 210 105 210 180 195 180 225 135 195 105 195 120
-Polygon -16777216 true false 90 270 105 270 105 255 90 270 105 270
-Polygon -16777216 true false 225 270 240 270 240 240 225 270 240 270
-Polygon -16777216 true false 195 180 195 105 195 180 195 105 195 105 180 105
-Polygon -16777216 true false 225 165 210 180 225 210 240 105 225 105 240 150
-Polygon -16777216 true false 240 195 225 210 255 135 240 105 255 120 240 150
-Polygon -16777216 true false 105 255 105 255 120 270 105 240 105 255
-Polygon -16777216 true false 240 240 240 240 255 255 240 225 240 240
-Polygon -16777216 true false 225 210 255 225 240 225 240 225 225 210
-Polygon -16777216 true false 270 195 270 210 285 225 285 210 270 195
-Polygon -1 true false 150 180 135 225 150 270 135 270 120 240 135 195 150 180
-Line -16777216 false 135 195 135 195
-Polygon -16777216 true false 120 240 135 270 150 270 135 255
-Polygon -16777216 true false 210 225 225 225 225 240 225 240 210 225
-Polygon -16777216 true false 195 180 210 210 225 210 225 210 210 195
-Polygon -16777216 true false 195 270 225 270 210 270 210 255 210 240
-Polygon -1 true false 30 60 30 105 30 90 30 105 45 75 30 60
 @#$#@#$#@
 NetLogo 6.4.0
 @#$#@#$#@

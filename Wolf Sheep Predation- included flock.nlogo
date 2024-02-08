@@ -1,30 +1,46 @@
 globals [
-  max-sheep ; don't let the sheep population grow too large
+  max-zebra ; don't let the zebra population grow too large
 ]
 
-; Sheep and wolves are both breeds of turtles
-breed [ sheep a-sheep ]  ; sheep is its own plural, so we use "a-sheep" as the singular
+; zebra and wolves are both breeds of turtles
+breed [ zebra a-zebra ]  ; zebra is its own plural, so we use "a-zebra" as the singular
 breed [ wolves wolf ]
 
-turtles-own [ energy ]       ; both wolves and sheep have energy
+turtles-own [ energy ]       ; both wolves and zebra have energy
 
-patches-own [ countdown ]    ; this is for the sheep-wolves-grass model version
+patches-own [ countdown ]    ; this is for the zebra-wolves-grass model version
 
 wolves-own [
   wolf-speed
   detection-outer-radius
   detection-inner-radius
+  pounce-duration-cd
   stalking-mode?
+]
+
+zebra-own [
+  flockmates         ;; agentset of nearby turtles
+  nearest-neighbor   ;; closest one of our flockmates
 ]
 
 to setup
   clear-all
-  ifelse netlogo-web? [ set max-sheep 10000 ] [ set max-sheep 30000 ]
+  ifelse netlogo-web? [ set max-zebra 10000 ] [ set max-zebra 30000 ]
 
   ; Check model-version switch
-  ; if we're not modeling grass, then the sheep don't need to eat to survive
+  ; if we're not modeling grass, then the zebra don't need to eat to survive
   ; otherwise each grass' state of growth and growing logic need to be set up
-  ifelse model-version = "sheep-wolves-grass" [
+
+  ;to generate-food
+  ; ask patch random-xcor random-ycor
+  ;  [
+  ;  set pcolor green
+  ;  ask other patches in-radius (random 7 + 3) ; size of patch
+  ;    [set pcolor green]
+  ;  ]
+
+  ;end
+  ifelse model-version = "zebra-wolves-grass" [
     ask patches [
       set pcolor one-of [ green brown ]
       ifelse pcolor = green
@@ -36,13 +52,13 @@ to setup
     ask patches [ set pcolor green ]
   ]
 
-  create-sheep initial-number-sheep  ; create the sheep, then initialize their variables
+  create-zebra initial-number-zebra  ; create the zebra, then initialize their variables
   [
     set shape  "zebra_prey"
     set color white
     set size 1.5  ; easier to see
     set label-color blue - 2
-    set energy random (2 * sheep-gain-from-food)
+    set energy random (2 * zebra-gain-from-food)
     setxy random-xcor random-ycor
   ]
 
@@ -56,6 +72,7 @@ to setup
     set wolf-speed 1
     set detection-outer-radius 5 ; HARDCODED FOR NOW
     set detection-inner-radius 3
+    set pounce-duration-cd 0 ; initial pounce (first kill)
     set stalking-mode? false
   ]
   display-labels
@@ -63,39 +80,40 @@ to setup
 end
 
 to go
-  ; stop the model if there are no wolves and no sheep
+  ; stop the model if there are no wolves and no zebra
   if not any? turtles [ stop ]
-  ; stop the model if there are no wolves and the number of sheep gets very large
-  if not any? wolves and count sheep > max-sheep [ user-message "The sheep have inherited the earth" stop ]
+  ; stop the model if there are no wolves and the number of zebra gets very large
+  if not any? wolves and count zebra > max-zebra [ user-message "The zebra have inherited the earth" stop ]
 
-  ask sheep [
-    sheep-move
+  ask zebra [
+    flock
+    zebra-move
 
-    ; in this version, sheep eat grass, grass grows, and it costs sheep energy to move
-    if model-version = "sheep-wolves-grass" [
-      set energy energy - 1  ; deduct energy for sheep only if running sheep-wolves-grass model version
-      eat-grass  ; sheep eat grass only if running the sheep-wolves-grass model version
-      death ; sheep die from starvation only if running the sheep-wolves-grass model version
+    ; in this version, zebra eat grass, grass grows, and it costs zebra energy to move
+    if model-version = "zebra-wolves-grass" [
+      set energy energy - 1  ; deduct energy for zebra only if running zebra-wolves-grass model version
+      eat-grass  ; zebra eat grass only if running the zebra-wolves-grass model version
+      death ; zebra die from starvation only if running the zebra-wolves-grass model version
     ]
 
-    reproduce-sheep  ; sheep reproduce at a random rate governed by a slider
+    reproduce-zebra  ; zebra reproduce at a random rate governed by a slider
   ]
 
   ask wolves [
     wolf-move
     set energy energy - 1  ; wolves lose energy as they move
-    hunt-sheep ; LIONS CHECK FOR ZEBRAS WITHIN RANGE TO STALK
+    hunt-zebra ; LIONS CHECK FOR ZEBRAS WITHIN RANGE TO STALK
     death ; wolves die if they run out of energy
     reproduce-wolves ; wolves reproduce at a random rate governed by a slider
   ]
 
-  if model-version = "sheep-wolves-grass" [ ask patches [ grow-grass ] ]
+  if model-version = "zebra-wolves-grass" [ ask patches [ grow-grass ] ]
 
   tick
   display-labels
 end
 
-to sheep-move  ; sheep procedure
+to zebra-move  ; zebra procedure
   rt random 50
   lt random 50
   if not can-move? 1 [ rt 180 ]
@@ -109,16 +127,16 @@ to wolf-move ; wolf procedure
   fd wolf-speed
 end
 
-to eat-grass  ; sheep procedure
-  ; sheep eat grass and turn the patch brown
+to eat-grass  ; zebra procedure
+  ; zebra eat grass and turn the patch brown
   if pcolor = green [
     set pcolor brown
-    set energy energy + sheep-gain-from-food  ; sheep gain energy by eating
+    set energy energy + zebra-gain-from-food  ; zebra gain energy by eating
   ]
 end
 
-to reproduce-sheep  ; sheep procedure
-  if random-float 100 < sheep-reproduce [  ; throw "dice" to see if you will reproduce
+to reproduce-zebra  ; zebra procedure
+  if random-float 100 < zebra-reproduce [  ; throw "dice" to see if you will reproduce
     set energy (energy / 2)                ; divide energy between parent and offspring
     hatch 1 [ rt random-float 360 fd 1 ]   ; hatch an offspring and move it forward 1 step
   ]
@@ -131,11 +149,11 @@ to reproduce-wolves  ; wolf procedure
   ]
 end
 
-to hunt-sheep ; wolf procedure
+to hunt-zebra ; wolf procedure
   if not stalking-mode? [
     set color black
-    let nearby-sheep turtles in-radius detection-outer-radius with [ breed = sheep ]
-    if any? nearby-sheep [
+    let nearby-zebra turtles in-radius detection-outer-radius with [ breed = zebra ]
+    if any? nearby-zebra [
       set stalking-mode? true
       slow-down ; ENTER STALKING MODE
     ]
@@ -143,8 +161,8 @@ to hunt-sheep ; wolf procedure
 
   if stalking-mode? [
     set color red
-    let close-sheep turtles in-radius detection-inner-radius with [ breed = sheep ]
-    if any? close-sheep [
+    let close-zebra turtles in-radius detection-inner-radius with [ breed = zebra ]
+    if any? close-zebra [
       pounce ; INITIATE POUNCE
       set stalking-mode? false ; RESET STALKING MODE
       set wolf-speed 1 ; RESET SPEED
@@ -157,16 +175,19 @@ to slow-down ; wolf procedure
 end
 
 to pounce ; wolf procedure
-  let target-sheep one-of turtles in-radius detection-inner-radius with [ breed = sheep ]
-  if target-sheep != nobody [
-    face target-sheep
-    fd detection-inner-radius
-    ask target-sheep [ die ]
-    set energy energy + wolf-gain-from-food
-  ]
+  let target-zebra one-of turtles in-radius detection-inner-radius with [ breed = zebra ]
+  ifelse pounce-duration-cd = 0 [
+    if target-zebra != nobody [
+      face target-zebra
+      fd detection-inner-radius
+      ask target-zebra [ die ]
+      set energy energy + wolf-gain-from-food
+      set pounce-duration-cd pounce-cd
+    ]
+  ] [ set pounce-duration-cd pounce-duration-cd - 1]
 end
 
-to death  ; turtle procedure (i.e. both wolf and sheep procedure)
+to death  ; turtle procedure (i.e. both wolf and zebra procedure)
   ; when energy dips below zero, die
   if energy < 0 [ die ]
 end
@@ -182,7 +203,7 @@ to grow-grass  ; patch procedure
 end
 
 to-report grass
-  ifelse model-version = "sheep-wolves-grass" [
+  ifelse model-version = "zebra-wolves-grass" [
     report patches with [pcolor = green]
   ]
   [ report 0 ]
@@ -195,10 +216,89 @@ to display-labels
     ask wolves [
       set label round energy
     ]
-    if model-version = "sheep-wolves-grass" [ ask sheep [ set label round energy ] ]
+    if model-version = "zebra-wolves-grass" [ ask zebra [ set label round energy ] ]
   ]
 end
 
+;-------------------------------------flock functions start-----------------------------------------------
+to flock  ;; turtle procedure
+  find-flockmates
+  if any? flockmates
+    [ find-nearest-neighbor
+      ifelse distance nearest-neighbor < minimum-separation
+        [ separate ]
+        [ align
+          cohere ] ]
+end
+
+to find-flockmates  ;; turtle procedure
+  set flockmates other turtles in-radius vision
+end
+
+to find-nearest-neighbor ;; turtle procedure
+  set nearest-neighbor min-one-of flockmates [distance myself]
+end
+
+;;; SEPARATE
+
+to separate  ;; turtle procedure
+  turn-away ([heading] of nearest-neighbor) max-separate-turn
+end
+
+;;; ALIGN
+
+to align  ;; turtle procedure
+  turn-towards average-flockmate-heading max-align-turn
+end
+
+to-report average-flockmate-heading  ;; turtle procedure
+  ;; We can't just average the heading variables here.
+  ;; For example, the average of 1 and 359 should be 0,
+  ;; not 180.  So we have to use trigonometry.
+  let x-component sum [dx] of flockmates
+  let y-component sum [dy] of flockmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component ]
+end
+
+;;; COHERE
+
+to cohere  ;; turtle procedure
+  turn-towards average-heading-towards-flockmates max-cohere-turn
+end
+
+to-report average-heading-towards-flockmates  ;; turtle procedure
+  ;; "towards myself" gives us the heading from the other turtle
+  ;; to me, but we want the heading from me to the other turtle,
+  ;; so we add 180
+  let x-component mean [sin (towards myself + 180)] of flockmates
+  let y-component mean [cos (towards myself + 180)] of flockmates
+  ifelse x-component = 0 and y-component = 0
+    [ report heading ]
+    [ report atan x-component y-component ]
+end
+
+;;; HELPER PROCEDURES
+
+to turn-towards [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings new-heading heading) max-turn
+end
+
+to turn-away [new-heading max-turn]  ;; turtle procedure
+  turn-at-most (subtract-headings heading new-heading) max-turn
+end
+
+;; turn right by "turn" degrees (or left if "turn" is negative),
+;; but never turn more than "max-turn" degrees
+to turn-at-most [turn max-turn]  ;; turtle procedure
+  ifelse abs turn > max-turn
+    [ ifelse turn > 0
+        [ rt max-turn ]
+        [ lt max-turn ] ]
+    [ rt turn ]
+end
+;-------------------------------------flock functions end-----------------------------------------------
 
 ; Copyright 1997 Uri Wilensky.
 ; See Info tab for full copyright and license.
@@ -233,13 +333,13 @@ ticks
 SLIDER
 5
 60
-179
+192
 93
-initial-number-sheep
-initial-number-sheep
+initial-number-zebra
+initial-number-zebra
 0
 250
-30.0
+55.0
 1
 1
 NIL
@@ -248,13 +348,13 @@ HORIZONTAL
 SLIDER
 5
 196
-179
+192
 229
-sheep-gain-from-food
-sheep-gain-from-food
+zebra-gain-from-food
+zebra-gain-from-food
 0.0
 50.0
-4.0
+10.0
 1.0
 1
 NIL
@@ -265,8 +365,8 @@ SLIDER
 231
 179
 264
-sheep-reproduce
-sheep-reproduce
+zebra-reproduce
+zebra-reproduce
 1.0
 20.0
 2.0
@@ -284,7 +384,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-2.0
+10.0
 1
 1
 NIL
@@ -299,7 +399,7 @@ wolf-gain-from-food
 wolf-gain-from-food
 0.0
 100.0
-20.0
+15.0
 1.0
 1
 NIL
@@ -314,7 +414,7 @@ wolf-reproduce
 wolf-reproduce
 0.0
 20.0
-5.0
+2.0
 1.0
 1
 %
@@ -385,17 +485,17 @@ true
 true
 "" ""
 PENS
-"sheep" 1.0 0 -612749 true "" "plot count sheep"
+"sheep" 1.0 0 -612749 true "" "plot count zebra"
 "wolves" 1.0 0 -16449023 true "" "plot count wolves"
 "grass / 4" 1.0 0 -10899396 true "" "if model-version = \"sheep-wolves-grass\" [ plot count grass / 4 ]"
 
 MONITOR
 41
 308
-111
+108
 353
-sheep
-count sheep
+zebra
+count zebra
 3
 1
 11
@@ -460,8 +560,98 @@ CHOOSER
 55
 model-version
 model-version
-"sheep-wolves" "sheep-wolves-grass"
+"zebra-wolves" "zebra-wolves-grass"
 0
+
+SLIDER
+920
+30
+1092
+63
+vision
+vision
+0.0
+10.0
+5.0
+0.5
+1
+patches
+HORIZONTAL
+
+SLIDER
+920
+75
+1122
+108
+minimum-separation
+minimum-separation
+0.0
+5.0
+1.0
+0.25
+1
+patches
+HORIZONTAL
+
+SLIDER
+915
+115
+1092
+148
+max-align-turn
+max-align-turn
+0.0
+20.0
+5.0
+0.25
+1
+degrees
+HORIZONTAL
+
+SLIDER
+910
+165
+1112
+198
+max-cohere-turn
+max-cohere-turn
+0.0
+20.0
+3.0
+0.25
+1
+degrees
+HORIZONTAL
+
+SLIDER
+910
+220
+1112
+253
+max-separate-turn
+max-separate-turn
+0.0
+20.0
+2.0
+0.25
+1
+degrees
+HORIZONTAL
+
+SLIDER
+915
+290
+1087
+323
+pounce-cd
+pounce-cd
+5
+20
+5.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
