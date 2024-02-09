@@ -150,16 +150,14 @@ to reproduce-lions  ; lion procedure
 end
 
 to hunt-zebra ; lion procedure
-  if not stalking-mode? [
+  ifelse not stalking-mode? [
     set color black
     let nearby-zebra turtles in-radius detection-outer-radius with [ breed = zebra ]
     if any? nearby-zebra [
       set stalking-mode? true
       slow-down ; ENTER STALKING MODE
     ]
-  ]
-
-  if stalking-mode? [
+  ] [
     set color red
     let close-zebra turtles in-radius detection-inner-radius with [ breed = zebra ]
     if any? close-zebra [
@@ -171,7 +169,7 @@ to hunt-zebra ; lion procedure
 end
 
 to slow-down ; lion procedure
-  set lion-speed 0.5
+  set lion-speed 0.4
 end
 
 to pounce ; lion procedure
@@ -319,8 +317,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -25
 25
@@ -371,7 +369,7 @@ zebra-reproduce
 zebra-reproduce
 1.0
 20.0
-2.0
+3.0
 1.0
 1
 %
@@ -386,7 +384,7 @@ initial-number-lions
 initial-number-lions
 0
 250
-20.0
+15.0
 1
 1
 NIL
@@ -401,7 +399,7 @@ lion-gain-from-food
 lion-gain-from-food
 0.0
 100.0
-30.0
+50.0
 1.0
 1
 NIL
@@ -431,7 +429,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 100
-61.0
+50.0
 1
 1
 NIL
@@ -551,7 +549,7 @@ SWITCH
 174
 show-energy?
 show-energy?
-0
+1
 1
 -1000
 
@@ -589,7 +587,7 @@ minimum-separation
 minimum-separation
 0.0
 5.0
-2.0
+1.25
 0.25
 1
 patches
@@ -604,7 +602,7 @@ max-align-turn
 max-align-turn
 0.0
 20.0
-14.0
+10.5
 0.25
 1
 degrees
@@ -649,7 +647,7 @@ pounce-cd
 pounce-cd
 0
 20
-2.0
+10.0
 1
 1
 NIL
