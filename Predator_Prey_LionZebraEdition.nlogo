@@ -1,14 +1,17 @@
 globals [
-  max-zebra ; don't let the zebra population grow too large
+  max-zebras ; don't let the zebra population grow too large
 ]
 
 ; zebra and lions are both breeds of turtles
-breed [ zebra a-zebra ]  ; zebra is its own plural, so we use "a-zebra" as the singular
+breed [ zebras zebra ]
 breed [ lions lion ]
 
 turtles-own [ energy ]       ; both lions and zebra have energy
 
-patches-own [ countdown ]    ; this is for the zebra-lions-grass model version
+patches-own [
+  countdown
+  can-grow-grass?
+]
 
 lions-own [
   lion-speed
@@ -18,84 +21,68 @@ lions-own [
   stalking-mode?
 ]
 
-zebra-own [
+zebras-own [
   flockmates         ;; agentset of nearby turtles
   nearest-neighbor   ;; closest one of our flockmates
 ]
 
 to setup
   clear-all
-  ifelse netlogo-web? [ set max-zebra 10000 ] [ set max-zebra 30000 ]
+  ifelse netlogo-web? [ set max-zebras 10000 ] [ set max-zebras 30000 ]
 
-  ; Check model-version switch
-  ; if we're not modeling grass, then the zebra don't need to eat to survive
-  ; otherwise each grass' state of growth and growing logic need to be set up
-
-  ;to generate-food
-  ; ask patch random-xcor random-ycor
-  ;  [
-  ;  set pcolor green
-  ;  ask other patches in-radius (random 7 + 3) ; size of patch
-  ;    [set pcolor green]
-  ;  ]
-
-  ;end
-  ifelse model-version = "zebra-lions-grass" [
-    ask patches [
-      set pcolor one-of [ green brown ]
-      ifelse pcolor = green
-        [ set countdown grass-regrowth-time ]
-      [ set countdown random grass-regrowth-time ] ; initialize grass regrowth clocks randomly for brown patches
+  ; Initialize grass patches based on probability
+  ask patches [
+    ifelse random-float 100 < grass-spawn-probability [
+      set pcolor green
+      set countdown grass-regrowth-time
+      set can-grow-grass? true
+    ] [
+      set pcolor brown
+      set can-grow-grass? false
     ]
   ]
-  [
-    ask patches [ set pcolor green ]
-  ]
 
-  create-zebra initial-number-zebra  ; create the zebra, then initialize their variables
+  create-zebras initial-number-zebras
   [
-    set shape  "zebra_prey"
+    set shape "zebra_prey"
     set color white
-    set size 3  ; easier to see
+    set size 3
     set label-color blue - 2
     set energy random (3 * zebra-gain-from-food)
     setxy random-xcor random-ycor
   ]
 
-  create-lions initial-number-lions  ; create the lions, then initialize their variables
+  create-lions initial-number-lions
   [
     set shape "lionpredator"
     set color black
-    set size 3  ; easier to see
+    set size 3
     set energy random (2 * lion-gain-from-food)
     setxy random-xcor random-ycor
     set lion-speed 1
-    set detection-outer-radius 5 ; HARDCODED FOR NOW
+    set detection-outer-radius 5
     set detection-inner-radius 3
-    set pounce-duration-cd 0 ; initial pounce (first kill)
+    set pounce-duration-cd 0
     set stalking-mode? false
   ]
+
   display-labels
   reset-ticks
 end
+
 
 to go
   ; stop the model if there are no lions and no zebra
   if not any? turtles [ stop ]
   ; stop the model if there are no lions and the number of zebra gets very large
-  if not any? lions and count zebra > max-zebra [ user-message "The zebra have inherited the earth" stop ]
+  if not any? lions and count zebras > max-zebras [ user-message "The zebra have inherited the earth" stop ]
 
-  ask zebra [
+  ask zebras [
     flock
     zebra-move
-
-    ; in this version, zebra eat grass, grass grows, and it costs zebra energy to move
-    if model-version = "zebra-lions-grass" [
-      set energy energy - 1  ; deduct energy for zebra only if running zebra-lions-grass model version
-      eat-grass  ; zebra eat grass only if running the zebra-lions-grass model version
-      death ; zebra die from starvation only if running the zebra-lions-grass model version
-    ]
-
+    set energy energy - 1  ; deduct energy for zebra only if running zebra-lions-grass model version
+    eat-grass  ; zebra eat grass only if running the zebra-lions-grass model version
+    death ; zebra die from starvation only if running the zebra-lions-grass model version
     reproduce-zebra  ; zebra reproduce at a random rate governed by a slider
   ]
 
@@ -107,7 +94,11 @@ to go
     reproduce-lions ; lions reproduce at a random rate governed by a slider
   ]
 
-  if model-version = "zebra-lions-grass" [ ask patches [ grow-grass ] ]
+  ask patches [
+    if can-grow-grass? [
+      grow-grass
+    ]
+  ]
 
   tick
   display-labels
@@ -152,14 +143,14 @@ end
 to hunt-zebra ; lion procedure
   ifelse not stalking-mode? [
     set color black
-    let nearby-zebra turtles in-radius detection-outer-radius with [ breed = zebra ]
+    let nearby-zebra turtles in-radius detection-outer-radius with [ breed = zebras ]
     if any? nearby-zebra [
       set stalking-mode? true
       slow-down ; ENTER STALKING MODE
     ]
   ] [
     set color red
-    let close-zebra turtles in-radius detection-inner-radius with [ breed = zebra ]
+    let close-zebra turtles in-radius detection-inner-radius with [ breed = zebras ]
     if any? close-zebra [
       pounce ; INITIATE POUNCE
       set stalking-mode? false ; RESET STALKING MODE
@@ -173,7 +164,7 @@ to slow-down ; lion procedure
 end
 
 to pounce ; lion procedure
-  let target-zebra one-of turtles in-radius detection-inner-radius with [ breed = zebra ]
+  let target-zebra one-of turtles in-radius detection-inner-radius with [ breed = zebras ]
   ifelse pounce-duration-cd = 0 [
     if target-zebra != nobody [
       face target-zebra
@@ -195,18 +186,17 @@ end
 to grow-grass  ; patch procedure
   ; countdown on brown patches: if you reach 0, grow some grass
   if pcolor = brown [
-    ifelse countdown <= 0
-      [ set pcolor green
-        set countdown grass-regrowth-time ]
-      [ set countdown countdown - 1 ]
+    ifelse countdown <= 0 [
+      set pcolor green
+      set countdown grass-regrowth-time
+    ] [
+      set countdown countdown - 1
+    ]
   ]
 end
 
 to-report grass
-  ifelse model-version = "zebra-lions-grass" [
     report patches with [pcolor = green]
-  ]
-  [ report 0 ]
 end
 
 
@@ -216,11 +206,15 @@ to display-labels
     ask lions [
       set label round energy
     ]
-    if model-version = "zebra-lions-grass" [ ask zebra [ set label round energy ] ]
+
+    ask zebras [
+      set label round energy
+    ]
   ]
 end
 
-;-------------------------------------flock functions start-----------------------------------------------
+;------------------------------------- FLOCKING START -----------------------------------------------
+
 to flock  ;; turtle procedure
   find-flockmates
   if any? flockmates
@@ -298,16 +292,13 @@ to turn-at-most [turn max-turn]  ;; turtle procedure
         [ lt max-turn ] ]
     [ rt turn ]
 end
-;-------------------------------------flock functions end-----------------------------------------------
-
-; Copyright 1997 Uri Wilensky.
-; See Info tab for full copyright and license.
+;------------------------------------- FLOCKING END -----------------------------------------------
 @#$#@#$#@
 GRAPHICS-WINDOW
-389
-14
-949
-575
+385
+15
+945
+576
 -1
 -1
 10.824
@@ -331,25 +322,25 @@ ticks
 30.0
 
 SLIDER
-5
-60
-192
-93
-initial-number-zebra
-initial-number-zebra
+10
+15
+200
+48
+initial-number-zebras
+initial-number-zebras
 0
 250
-50.0
+60.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-5
-196
-192
-229
+10
+220
+200
+253
 zebra-gain-from-food
 zebra-gain-from-food
 0.0
@@ -361,10 +352,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-5
-231
-179
-264
+10
+260
+200
+293
 zebra-reproduce
 zebra-reproduce
 1.0
@@ -376,10 +367,10 @@ zebra-reproduce
 HORIZONTAL
 
 SLIDER
-185
-60
-350
-93
+205
+15
+375
+48
 initial-number-lions
 initial-number-lions
 0
@@ -391,25 +382,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-200
-195
-365
-228
+205
+220
+375
+253
 lion-gain-from-food
 lion-gain-from-food
 0.0
 100.0
-50.0
+70.0
 1.0
 1
 NIL
 HORIZONTAL
 
 SLIDER
-200
-233
-365
-266
+205
+260
+375
+293
 lion-reproduce
 lion-reproduce
 0.0
@@ -421,10 +412,10 @@ lion-reproduce
 HORIZONTAL
 
 SLIDER
-40
-100
-252
-133
+10
+60
+200
+93
 grass-regrowth-time
 grass-regrowth-time
 0
@@ -436,10 +427,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-40
-140
-109
-173
+50
+135
+119
+168
 setup
 setup
 NIL
@@ -453,10 +444,10 @@ NIL
 1
 
 BUTTON
-115
-140
-190
-173
+125
+135
+200
+168
 go
 go
 T
@@ -470,10 +461,10 @@ NIL
 0
 
 PLOT
-1066
-93
-1407
-334
+960
+75
+1301
+316
 populations
 time
 pop.
@@ -485,26 +476,26 @@ true
 true
 "" ""
 PENS
-"sheep" 1.0 0 -612749 true "" "plot count zebra"
-"wolves" 1.0 0 -16449023 true "" "plot count lions"
-"grass / 4" 1.0 0 -10899396 true "" "if model-version = \"zebra-lions-grass\" [ plot count grass / 4 ]"
+"grass / 4" 1.0 0 -10899396 true "" "plot count grass / 4"
+"zebras" 1.0 0 -408670 true "" "plot count zebras"
+"lions" 1.0 0 -16777216 true "" "plot count lions"
 
 MONITOR
-1057
-26
-1124
-71
-zebra
-count zebra
+957
+16
+1024
+61
+zebras
+count zebras
 3
 1
 11
 
 MONITOR
-1132
-25
-1199
-70
+1030
+15
+1097
+60
 lions
 count lions
 3
@@ -512,10 +503,10 @@ count lions
 11
 
 MONITOR
-1208
-25
-1273
-70
+1105
+15
+1170
+60
 grass
 count grass / 4
 0
@@ -524,50 +515,40 @@ count grass / 4
 
 TEXTBOX
 20
-178
+190
 160
-196
+208
 Zebra settings
-11
+12
 0.0
 0
 
 TEXTBOX
-198
-176
-311
-194
+205
+195
+318
+213
 Lion settings
-11
+12
 0.0
 0
 
 SWITCH
-215
-141
-351
-174
+205
+135
+335
+168
 show-energy?
 show-energy?
 1
 1
 -1000
 
-CHOOSER
-5
-10
-350
-55
-model-version
-model-version
-"zebra-lions" "zebra-lions-grass"
-1
-
 SLIDER
-10
-300
-182
-333
+15
+375
+200
+408
 vision
 vision
 0.0
@@ -579,10 +560,10 @@ patches
 HORIZONTAL
 
 SLIDER
-10
-345
-199
-378
+205
+375
+375
+408
 minimum-separation
 minimum-separation
 0.0
@@ -594,10 +575,10 @@ patches
 HORIZONTAL
 
 SLIDER
-10
-385
-187
-418
+15
+415
+200
+448
 max-align-turn
 max-align-turn
 0.0
@@ -609,10 +590,10 @@ degrees
 HORIZONTAL
 
 SLIDER
-10
-426
-212
-459
+205
+415
+375
+448
 max-cohere-turn
 max-cohere-turn
 0.0
@@ -624,10 +605,10 @@ degrees
 HORIZONTAL
 
 SLIDER
-8
-468
-210
-501
+15
+455
+200
+488
 max-separate-turn
 max-separate-turn
 0.0
@@ -639,29 +620,44 @@ degrees
 HORIZONTAL
 
 SLIDER
-201
-271
-373
-304
+205
+300
+375
+333
 pounce-cd
 pounce-cd
 0
 20
-10.0
+15.0
 1
 1
 NIL
 HORIZONTAL
 
 TEXTBOX
-19
-278
-156
-296
+24
+348
+369
+379
 Zebra Flocking settings\n
-10
+12
 0.0
 1
+
+SLIDER
+205
+60
+375
+93
+grass-spawn-probability
+grass-spawn-probability
+0
+100
+70.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
